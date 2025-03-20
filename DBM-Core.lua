@@ -26,7 +26,9 @@
 --
 ---@class DBMCoreNamespace
 local private = select(2, ...)
-
+if GetCVar('portal') == 'CN' then
+	private.isWrath = true
+end
 --WARNING: DBM is dangerously close too 200 local variables, avoid adding locals to the file scope.
 --More modulation or scoping is needed to reduce this
 local DBMPrefix = "D5"
@@ -6586,6 +6588,28 @@ do
 				currentSpecID, currentSpecName = catafallbackClassToRole[playerClass], playerClass--give temp first spec id for non-specialization char. no one should use dbm with no specialization, below level 10, should not need dbm.
 			end
 			DBM:Debug("Current specID set to: "..currentSpecID, 2)
+		elseif private.isWrath and GetCVar('portal') == 'CN' then
+			local numTabs = GetNumTalentTabs()
+			local highestPointsSpent = 0
+			if MAX_TALENT_TABS then
+				for i = 1, MAX_TALENT_TABS do
+					if i <= numTabs then
+						-- local _, _, wrathPointsSpent, _, pointsSpent = GetTalentTabInfo(i)--specID, specName will be used in next update once era spec table rebuilt
+						local _, _, _, _, pointsSpent, _, _, _ =  GetTalentTabInfo(i)
+						local usedPoints = pointsSpent
+						if usedPoints > highestPointsSpent then
+							highestPointsSpent = usedPoints
+							currentSpecGroup = i
+							currentSpecID = playerClass .. tostring(i)--Associate specID with class name and tabnumber (class is used because spec name is shared in some spots like "holy")
+							currentSpecName = currentSpecID
+						end
+					end
+				end
+			end
+			--If 0 talents are spent, then just set them to first spec to prevent nil errors
+			--This should only happen for a level 1 player or someone who's in middle of respecing
+			if not currentSpecID then currentSpecID = playerClass .. tostring(1) end
+			DBM:Debug("Current specID set to: "..currentSpecID, 2)		
 		else
 			local numTabs = GetNumTalentTabs()
 			local highestPointsSpent = 0
